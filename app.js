@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const SUPABASE_URL = "https://ueejjgocuvmmkxsogdvu.supabase.co";
-const SUPABASE_KEY = "sb_publishable_YtGwRUwqcVGWF-ai_fTQcg_m1-Df5eP";
+const SUPABASE_URL = "https://hypkwdvvrmakqrowbkqw.supabase.co";
+const SUPABASE_KEY = "sb_publishable_y0_DEhM-bC37jEKkiC_GGQ_TaWvPqVe";
 
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 const app = document.getElementById("app");
