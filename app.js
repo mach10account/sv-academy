@@ -12,7 +12,11 @@ const topbar = document.getElementById("topbar");
 
 let catalog = null;   // cache del catalogo, ricaricata dopo ogni salvataggio
 let session = null;
-let recovering = false;  // true quando si arriva dal link "password dimenticata"
+// Letto subito, in modo sincrono: supabase-js ripulisce l'hash appena stabilisce
+// la sessione, e l'evento PASSWORD_RECOVERY puo' scattare prima che il nostro
+// ascoltatore sia pronto. Senza questo controllo il link di recupero porta
+// direttamente ai corsi, saltando il cambio password.
+let recovering = /(^|[#&])type=recovery(&|$)/.test(location.hash);
 
 // ------------------------------------------------------------------ utils
 
@@ -354,7 +358,16 @@ async function boot() {
   session = data.session;
 
   // Arrivo dal link di recupero: prima la nuova password, poi il resto.
-  if (recovering && session) return renderNewPassword(true);
+  // Se la sessione non e' ancora pronta si aspetta: ci pensa
+  // onAuthStateChange a richiamare boot() appena arriva.
+  if (recovering) {
+    if (!session) {
+      topbar.hidden = true;
+      app.innerHTML = `<div class="loading">Un attimo…</div>`;
+      return;
+    }
+    return renderNewPassword(true);
+  }
 
   if (!session) {
     return (location.hash === "#/recupera") ? renderRecover() : renderLogin();
@@ -376,8 +389,12 @@ window.addEventListener("hashchange", () => {
   if (catalog) route();
 });
 
-sb.auth.onAuthStateChange((event) => {
-  if (event === "PASSWORD_RECOVERY") { recovering = true; boot(); }
+sb.auth.onAuthStateChange((event, s) => {
+  if (event === "PASSWORD_RECOVERY") recovering = true;
+  // Durante un recupero la sessione puo' arrivare con qualsiasi evento
+  // (INITIAL_SESSION, SIGNED_IN, PASSWORD_RECOVERY): appena c'e', si mostra
+  // la schermata della nuova password.
+  if (recovering && s) { session = s; renderNewPassword(true); }
 });
 
 boot();
