@@ -3,6 +3,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL = "https://hypkwdvvrmakqrowbkqw.supabase.co";
 const SUPABASE_KEY = "sb_publishable_y0_DEhM-bC37jEKkiC_GGQ_TaWvPqVe";
 
+// Il recupero password passa da n8n, che genera il link e lo manda su WhatsApp.
+const RECOVERY_WEBHOOK = "https://n8n.srv1035791.hstgr.cloud/webhook/academy-recupero";
+
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 const app = document.getElementById("app");
 const topbar = document.getElementById("topbar");
@@ -68,7 +71,7 @@ function renderLogin(message = "") {
         <input id="password" type="password" required placeholder="Password" autocomplete="current-password">
         <button class="btn btn-wide" type="submit">Entra</button>
       </form>
-      <p class="sub small">Password dimenticata? Scrivi al tuo consulente:<br>te ne imposta una nuova in un attimo.</p>
+      <p class="sub small"><a href="#/recupera">Ho dimenticato la password</a></p>
     </div>`;
 
   document.getElementById("f").addEventListener("submit", async (e) => {
@@ -91,6 +94,53 @@ function renderLogin(message = "") {
     }
     location.hash = "#/";
     boot();
+  });
+}
+
+// Richiesta del link di recupero: parte su WhatsApp, non via email.
+// La risposta e' sempre la stessa, che il numero esista o no.
+function renderRecover(message = "") {
+  topbar.hidden = true;
+  app.innerHTML = `
+    <div class="login">
+      <h1>Password dimenticata</h1>
+      <p class="sub">Scrivi la tua email oppure il numero di telefono:<br>
+         ti mandiamo il link su WhatsApp.</p>
+      ${message}
+      <form id="f">
+        <input id="identifier" type="text" required placeholder="email@centro.it oppure 347 1234567"
+               autocomplete="username" inputmode="email">
+        <button class="btn btn-wide" type="submit">Mandami il link</button>
+      </form>
+      <p class="sub small"><a href="#/">Torna all'accesso</a></p>
+    </div>`;
+
+  document.getElementById("f").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector("button");
+    const identifier = document.getElementById("identifier").value.trim();
+    btn.disabled = true;
+    btn.textContent = "Invio…";
+
+    try {
+      await fetch(RECOVERY_WEBHOOK, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ identifier }),
+      });
+    } catch (_) {
+      // Anche se la chiamata non riesce mostriamo lo stesso messaggio: chi
+      // prova numeri a caso non deve capire nulla dalla risposta.
+    }
+
+    app.innerHTML = `
+      <div class="login">
+        <h1>Controlla WhatsApp</h1>
+        <p class="sub">Se il recapito è registrato, ti arriva un messaggio col link
+           per impostare la nuova password.</p>
+        <p class="sub small">Non ti arriva niente? Scrivi al tuo consulente.<br>
+           <a href="#/">Torna all'accesso</a></p>
+      </div>`;
   });
 }
 
@@ -306,7 +356,9 @@ async function boot() {
   // Arrivo dal link di recupero: prima la nuova password, poi il resto.
   if (recovering && session) return renderNewPassword(true);
 
-  if (!session) return renderLogin();
+  if (!session) {
+    return (location.hash === "#/recupera") ? renderRecover() : renderLogin();
+  }
 
   topbar.hidden = false;
   document.getElementById("who").textContent = session.user.email;
