@@ -4,7 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SV Academy</title>
-  <link rel="stylesheet" href="styles.css">
+  <!-- Il numero di versione va alzato a ogni pubblicazione: GitHub Pages
+       tiene i file in cache per 10 minuti, e senza questo i centri
+       continuerebbero a usare la versione vecchia. -->
+  <link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
   <header id="topbar" hidden>
@@ -19,6 +22,6 @@
     <div class="loading">Caricamento…</div>
   </main>
 
-  <script type="module" src="app.js"></script>
+  <script type="module" src="app.js?v=4"></script>
 </body>
 </html>

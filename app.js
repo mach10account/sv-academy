@@ -12,11 +12,7 @@ const topbar = document.getElementById("topbar");
 
 let catalog = null;   // cache del catalogo, ricaricata dopo ogni salvataggio
 let session = null;
-// Letto subito, in modo sincrono: supabase-js ripulisce l'hash appena stabilisce
-// la sessione, e l'evento PASSWORD_RECOVERY puo' scattare prima che il nostro
-// ascoltatore sia pronto. Senza questo controllo il link di recupero porta
-// direttamente ai corsi, saltando il cambio password.
-let recovering = /(^|[#&])type=recovery(&|$)/.test(location.hash);
+let recovering = false;  // true mentre si sta impostando la password dal link
 
 // ------------------------------------------------------------------ utils
 
@@ -146,6 +142,35 @@ function renderRecover(message = "") {
            <a href="#/">Torna all'accesso</a></p>
       </div>`;
   });
+}
+
+// Si arriva qui dal link WhatsApp: #/nuova-password/<token>.
+// Il token viene verificato adesso, in pagina. E' il motivo per cui il link
+// sopravvive all'anteprima di WhatsApp: aprire questo indirizzo non consuma
+// nulla finche' non e' il browser del destinatario a farlo.
+async function renderTokenRecovery(tokenHash) {
+  topbar.hidden = true;
+  app.innerHTML = `<div class="loading">Verifico il link…</div>`;
+
+  const { data, error } = await sb.auth.verifyOtp({
+    token_hash: tokenHash,
+    type: "recovery",
+  });
+
+  if (error || !data?.session) {
+    app.innerHTML = `
+      <div class="login">
+        <h1>Link non più valido</h1>
+        <p class="sub">I link durano un'ora e si possono usare una volta sola.<br>
+           Chiedine un altro, oppure scrivi al tuo consulente.</p>
+        <p class="sub small"><a href="#/recupera">Richiedi un nuovo link</a></p>
+      </div>`;
+    return;
+  }
+
+  session = data.session;
+  recovering = true;
+  renderNewPassword(true);
 }
 
 // Impostazione della nuova password: si arriva qui dal link di recupero,
@@ -354,20 +379,15 @@ function route() {
 }
 
 async function boot() {
+  // Il link di recupero ha la precedenza su tutto: anche se c'e' gia' una
+  // sessione aperta, chi arriva da li' deve poter cambiare la password.
+  const [, sezione, parametro] = (location.hash || "#/").split("/");
+  if (sezione === "nuova-password" && parametro) {
+    return renderTokenRecovery(parametro);
+  }
+
   const { data } = await sb.auth.getSession();
   session = data.session;
-
-  // Arrivo dal link di recupero: prima la nuova password, poi il resto.
-  // Se la sessione non e' ancora pronta si aspetta: ci pensa
-  // onAuthStateChange a richiamare boot() appena arriva.
-  if (recovering) {
-    if (!session) {
-      topbar.hidden = true;
-      app.innerHTML = `<div class="loading">Un attimo…</div>`;
-      return;
-    }
-    return renderNewPassword(true);
-  }
 
   if (!session) {
     return (location.hash === "#/recupera") ? renderRecover() : renderLogin();
@@ -389,12 +409,8 @@ window.addEventListener("hashchange", () => {
   if (catalog) route();
 });
 
-sb.auth.onAuthStateChange((event, s) => {
-  if (event === "PASSWORD_RECOVERY") recovering = true;
-  // Durante un recupero la sessione puo' arrivare con qualsiasi evento
-  // (INITIAL_SESSION, SIGNED_IN, PASSWORD_RECOVERY): appena c'e', si mostra
-  // la schermata della nuova password.
-  if (recovering && s) { session = s; renderNewPassword(true); }
-});
+// Nessun ascolto sugli eventi di autenticazione: il recupero passa dalla
+// rotta #/nuova-password, che e' deterministica e non dipende da chi arriva
+// prima tra la libreria e noi.
 
 boot();
