@@ -1,0 +1,247 @@
+:root {
+  --navy: #16233f;
+  --navy-soft: #f2f4f9;
+  --gold: #c8a256;
+  --ink: #1c2333;
+  --muted: #6d7488;
+  --line: #e4e7ef;
+  --bg: #fbfbfd;
+  --ok: #2f8f6b;
+  --ok-bg: #e8f4ef;
+  --radius: 14px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ------------------------------------------------------------- topbar */
+
+#topbar[hidden] { display: none; }
+
+#topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 22px;
+  height: 60px;
+  background: var(--navy);
+  color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.brand {
+  font-weight: 700;
+  letter-spacing: .3px;
+  color: #fff;
+  text-decoration: none;
+}
+.brand::first-letter { color: var(--gold); }
+
+.spacer { flex: 1; }
+.who { color: #b9c0d4; font-size: 14px; }
+
+/* -------------------------------------------------------------- layout */
+
+#app { max-width: 1000px; margin: 0 auto; padding: 30px 22px 70px; }
+.loading { color: var(--muted); padding: 60px 0; text-align: center; }
+
+h1 { font-size: 28px; margin: 0 0 6px; }
+h2 { font-size: 19px; margin: 32px 0 12px; }
+.sub { color: var(--muted); margin: 0 0 26px; }
+
+.back {
+  display: inline-block;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+.back:hover { color: var(--ink); }
+
+/* --------------------------------------------------------------- login */
+
+.login {
+  max-width: 380px;
+  margin: 70px auto;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 32px;
+  text-align: center;
+}
+.login h1 { font-size: 22px; }
+.login input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 15px;
+  margin: 16px 0 12px;
+}
+.login input:focus { outline: 2px solid var(--navy); border-color: transparent; }
+.login input + input { margin-top: 0; }
+.sub.small { font-size: 13.5px; margin: 14px 0 0; }
+.sub.small a { color: var(--navy); }
+
+a.btn-ghost { text-decoration: none; display: inline-block; }
+
+/* -------------------------------------------------------------- bottoni */
+
+.btn {
+  background: var(--navy);
+  color: #fff;
+  border: 0;
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn:disabled { opacity: .55; cursor: default; }
+.btn-wide { width: 100%; }
+.btn-gold { background: var(--gold); color: #241c07; }
+.btn-ghost {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,.3);
+  color: #fff;
+  border-radius: 8px;
+  padding: 6px 13px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* --------------------------------------------------------------- corsi */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow .15s, transform .15s;
+}
+.card:hover { box-shadow: 0 6px 22px rgba(22,35,63,.10); transform: translateY(-2px); }
+.card.locked { opacity: .78; }
+
+.thumb {
+  aspect-ratio: 16 / 9;
+  background: var(--navy-soft) center/cover no-repeat;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+.card-body { padding: 15px 16px 17px; }
+.card-body h3 { margin: 0 0 6px; font-size: 16px; line-height: 1.35; }
+.card-body p { margin: 0; color: var(--muted); font-size: 13.5px; }
+
+.meta {
+  margin-top: 12px;
+  font-size: 12.5px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--navy-soft);
+  color: var(--navy);
+}
+.badge.gold { background: #f7efdc; color: #7a5c17; }
+.badge.done { background: var(--ok-bg); color: var(--ok); }
+
+/* ------------------------------------------------------------- barra % */
+
+.bar { height: 6px; border-radius: 99px; background: var(--line); overflow: hidden; flex: 1; }
+.bar > i { display: block; height: 100%; background: var(--ok); }
+
+/* ------------------------------------------------------------- lezioni */
+
+.lessons { border: 1px solid var(--line); border-radius: var(--radius); background: #fff; overflow: hidden; }
+.lesson {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 14px 17px;
+  border-bottom: 1px solid var(--line);
+  text-decoration: none;
+  color: inherit;
+}
+.lesson:last-child { border-bottom: 0; }
+.lesson:hover { background: var(--navy-soft); }
+.lesson .n {
+  width: 26px; height: 26px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--navy-soft);
+  color: var(--navy);
+  display: grid; place-items: center;
+  font-size: 12.5px; font-weight: 700;
+}
+.lesson .n.done { background: var(--ok-bg); color: var(--ok); }
+.lesson .t { flex: 1; }
+
+/* -------------------------------------------------------------- player */
+
+.player-wrap {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.player-wrap iframe { width: 100%; height: 100%; border: 0; display: block; }
+
+/* Watermark: sopra al player, non cliccabile, si sposta ogni tanto. */
+#wm {
+  position: absolute;
+  pointer-events: none;
+  color: rgba(255,255,255,.42);
+  font-size: 13px;
+  text-shadow: 0 1px 3px rgba(0,0,0,.6);
+  transition: left .8s ease, top .8s ease;
+  user-select: none;
+}
+
+.lesson-desc { margin-top: 22px; color: #333a4b; }
+.lesson-desc a { color: var(--navy); }
+
+.actions { display: flex; gap: 12px; align-items: center; margin-top: 22px; flex-wrap: wrap; }
+
+.notice {
+  background: #fff8e6;
+  border: 1px solid #f0e0b6;
+  color: #6b5514;
+  padding: 13px 16px;
+  border-radius: 10px;
+  font-size: 14.5px;
+}
+.error { background: #fdeceb; border-color: #f3c9c6; color: #8d2b25; }
+
+@media (max-width: 620px) {
+  #app { padding: 22px 15px 60px; }
+  h1 { font-size: 23px; }
+}
