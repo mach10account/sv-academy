@@ -68,7 +68,7 @@ function renderLogin(message = "") {
         <input id="password" type="password" required placeholder="Password" autocomplete="current-password">
         <button class="btn btn-wide" type="submit">Entra</button>
       </form>
-      <p class="sub small"><a href="#/recupera" id="forgot">Ho dimenticato la password</a></p>
+      <p class="sub small">Password dimenticata? Scrivi al tuo consulente:<br>te ne imposta una nuova in un attimo.</p>
     </div>`;
 
   document.getElementById("f").addEventListener("submit", async (e) => {
@@ -91,44 +91,6 @@ function renderLogin(message = "") {
     }
     location.hash = "#/";
     boot();
-  });
-}
-
-// Richiesta del link di reimpostazione.
-function renderRecover(message = "") {
-  topbar.hidden = true;
-  app.innerHTML = `
-    <div class="login">
-      <h1>Password dimenticata</h1>
-      <p class="sub">Inserisci la tua email: ti mandiamo un link per impostarne una nuova.</p>
-      ${message}
-      <form id="f">
-        <input id="email" type="email" required placeholder="la-tua@email.it" autocomplete="email">
-        <button class="btn btn-wide" type="submit">Invia il link</button>
-      </form>
-      <p class="sub small"><a href="#/">Torna all'accesso</a></p>
-    </div>`;
-
-  document.getElementById("f").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const btn = e.target.querySelector("button");
-    const email = document.getElementById("email").value.trim();
-    btn.disabled = true;
-    btn.textContent = "Invio…";
-
-    const { error } = await sb.auth.resetPasswordForEmail(email, {
-      redirectTo: location.origin + location.pathname,
-    });
-
-    if (error) {
-      renderRecover(`<div class="notice error">${esc(error.message)}</div>`);
-      return;
-    }
-    app.innerHTML = `
-      <div class="login">
-        <h1>Controlla la posta</h1>
-        <p class="sub">Se <strong>${esc(email)}</strong> è registrata, ti arriva il link.<br>Guarda anche nello spam.</p>
-      </div>`;
   });
 }
 
@@ -344,9 +306,7 @@ async function boot() {
   // Arrivo dal link di recupero: prima la nuova password, poi il resto.
   if (recovering && session) return renderNewPassword(true);
 
-  if (!session) {
-    return (location.hash === "#/recupera") ? renderRecover() : renderLogin();
-  }
+  if (!session) return renderLogin();
 
   topbar.hidden = false;
   document.getElementById("who").textContent = session.user.email;
@@ -360,7 +320,7 @@ document.getElementById("logout").addEventListener("click", async () => {
 });
 
 window.addEventListener("hashchange", () => {
-  if (!session) return boot();          // gestisce #/recupera da sloggati
+  if (!session) return boot();
   if (catalog) route();
 });
 
