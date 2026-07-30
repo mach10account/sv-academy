@@ -247,6 +247,22 @@ a.btn-ghost { text-decoration: none; display: inline-block; }
 
 .chat { display: flex; flex-direction: column; }
 
+.chat-nav { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.chat-nav a, .chat-nav button {
+  background: var(--navy-soft);
+  color: var(--navy);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+.chat-nav a:hover, .chat-nav button:hover { border-color: var(--navy); }
+
+.conv-meta { display: block; color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+
 .chat-msgs { display: flex; flex-direction: column; gap: 10px; }
 
 .msg {

@@ -393,7 +393,67 @@ const SUGGERIMENTI = [
   "Quali numeri devo controllare ogni mese nel mio centro?",
 ];
 
-function renderChat() {
+// #/assistente            → conversazione corrente
+// #/assistente/storico    → elenco conversazioni salvate
+// #/assistente/c/<uuid>   → riapre una conversazione (e si puo' continuare)
+function renderChat(sub, id) {
+  if (sub === "storico") return renderChatList();
+  if (sub === "c" && id) return openConversation(id);
+  renderChatCurrent();
+}
+
+const quando = (s) => {
+  const d = new Date(s);
+  return d.toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit" }) +
+    " " + d.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+};
+
+// Tutte le conversazioni del membro (i messaggi stanno sul server: il log
+// della edge function e' la fonte di verita', qui si legge soltanto).
+async function renderChatList() {
+  app.innerHTML = `
+    <a class="back" href="#/assistente">← Assistente</a>
+    <h1>Le tue conversazioni</h1>
+    <div class="loading">Carico lo storico…</div>`;
+
+  const { data, error } = await sb.rpc("academy_chat_conversations");
+  if (error) {
+    app.querySelector(".loading").outerHTML =
+      `<div class="notice error">Non riesco a caricare lo storico: ${esc(error.message)}</div>`;
+    return;
+  }
+
+  const rows = (data ?? []).map((c) => `
+    <a class="lesson" href="#/assistente/c/${esc(c.id)}">
+      <span class="n">💬</span>
+      <span class="t">${esc(c.titolo || "(senza titolo)")}
+        <span class="conv-meta">${quando(c.last_at)} · ${c.domande} domand${c.domande === 1 ? "a" : "e"}</span>
+      </span>
+    </a>`).join("");
+
+  app.innerHTML = `
+    <a class="back" href="#/assistente">← Assistente</a>
+    <h1>Le tue conversazioni</h1>
+    <p class="sub">Tocca una conversazione per rileggerla o continuarla.</p>
+    ${rows ? `<div class="lessons">${rows}</div>`
+      : `<div class="notice">Non hai ancora conversazioni salvate.</div>`}`;
+}
+
+async function openConversation(id) {
+  app.innerHTML = `<div class="loading">Riapro la conversazione…</div>`;
+  const { data, error } = await sb.rpc("academy_chat_history", { p_conversation: id });
+  if (error || !Array.isArray(data) || !data.length) {
+    app.innerHTML = `
+      <a class="back" href="#/assistente/storico">← Le tue conversazioni</a>
+      <div class="notice">Conversazione non trovata.</div>`;
+    return;
+  }
+  chat = { id, msgs: data.map((m) => ({ role: m.role, content: m.content })), busy: false };
+  saveChat();
+  renderChatCurrent();
+}
+
+function renderChatCurrent() {
   const bubbles = chat.msgs.map((m) =>
     `<div class="msg ${m.role === "user" ? "user" : "ai"}">${m.role === "user" ? esc(m.content) : chatHtml(m.content)}</div>`,
   ).join("");
@@ -402,6 +462,10 @@ function renderChat() {
     <a class="back" href="#/">← Tutti i corsi</a>
     <h1>Assistente</h1>
     <p class="sub">Fammi una domanda sui contenuti dei corsi: ti rispondo citando la lezione giusta.</p>
+    <div class="chat-nav">
+      <a href="#/assistente/storico">🕘 Conversazioni precedenti</a>
+      ${chat.msgs.length ? `<button id="new-chat" type="button">＋ Nuova conversazione</button>` : ""}
+    </div>
     <div class="chat">
       <div id="msgs" class="chat-msgs">
         ${bubbles || ""}
@@ -427,6 +491,13 @@ function renderChat() {
   });
   app.querySelectorAll(".chat-suggest button").forEach((b) =>
     b.addEventListener("click", () => { if (!chat.busy) sendChat(b.dataset.q); }));
+
+  document.getElementById("new-chat")?.addEventListener("click", () => {
+    chat = { id: crypto.randomUUID(), msgs: [], busy: false };
+    saveChat();
+    if (location.hash !== "#/assistente") location.hash = "#/assistente";
+    else renderChatCurrent();
+  });
 
   scrollChat();
 }
@@ -556,11 +627,12 @@ async function loadCatalog() {
 
 function route() {
   clearInterval(wmTimer);
-  const [, section, param] = (location.hash || "#/").split("/");
+  const parts = (location.hash || "#/").split("/");
+  const [, section, param] = parts;
   if (section === "password") return renderNewPassword(false);
   if (section === "corso") return renderCourse(param);
   if (section === "lezione") return renderLesson(param);
-  if (section === "assistente") return renderChat();
+  if (section === "assistente") return renderChat(param, parts[3]);
   renderHome();
 }
 
