@@ -456,11 +456,15 @@ async function sendChat(question) {
   saveChat();
   msgs.querySelector(".chat-suggest")?.remove();
   msgs.insertAdjacentHTML("beforeend", `<div class="msg user">${esc(question)}</div>`);
-  msgs.insertAdjacentHTML("beforeend", `<div class="msg ai" id="live"><span class="dots">Ci penso…</span></div>`);
+
+  // Riferimento diretto alla bolla, MAI per id: con piu' domande nella stessa
+  // pagina un id duplicato farebbe finire la risposta nella bolla precedente.
+  const live = document.createElement("div");
+  live.className = "msg ai";
+  live.innerHTML = `<span class="dots">Ci penso…</span>`;
+  msgs.appendChild(live);
   setChatBusy(true);
   scrollChat();
-
-  const live = document.getElementById("live");
   let answer = "";
   const showStatus = (text) => {
     if (!status) return;
