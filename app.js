@@ -357,6 +357,187 @@ function renderMissing(msg = "Contenuto non trovato.") {
   app.innerHTML = `<a class="back" href="#/">← Tutti i corsi</a><div class="notice">${esc(msg)}</div>`;
 }
 
+// -------------------------------------------------------------- assistente
+
+const CHAT_URL = `${SUPABASE_URL}/functions/v1/academy-chat`;
+
+// La conversazione vive nel tab: sopravvive alla navigazione, muore col tab.
+let chat = { id: null, msgs: [], busy: false };
+try {
+  const saved = JSON.parse(sessionStorage.getItem("sv_chat") || "null");
+  if (saved && Array.isArray(saved.msgs)) chat = { ...saved, busy: false };
+} catch (_) { /* storage corrotto: si riparte da zero */ }
+if (!chat.id) chat.id = crypto.randomUUID();
+
+const saveChat = () => {
+  try {
+    sessionStorage.setItem("sv_chat", JSON.stringify({ id: chat.id, msgs: chat.msgs.slice(-24) }));
+  } catch (_) { /* quota storage piena: pazienza */ }
+};
+
+// Rendering della risposta: tutto escapato, poi si riabilitano SOLO i link
+// alle lezioni [titolo](#/lezione/<uuid>) e il **grassetto**.
+function chatHtml(text) {
+  let h = esc(text);
+  h = h.replace(
+    /\[([^\]]+)\]\((#\/lezione\/[0-9a-f-]{36})\)/g,
+    `<a href="$2">📖 $1</a>`,
+  );
+  h = h.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
+  return h.replace(/\n/g, "<br>");
+}
+
+const SUGGERIMENTI = [
+  "Come gestisco l'obiezione «ci devo pensare»?",
+  "Cosa posso pubblicare sui social in 10 minuti al giorno?",
+  "Quali numeri devo controllare ogni mese nel mio centro?",
+];
+
+function renderChat() {
+  const bubbles = chat.msgs.map((m) =>
+    `<div class="msg ${m.role === "user" ? "user" : "ai"}">${m.role === "user" ? esc(m.content) : chatHtml(m.content)}</div>`,
+  ).join("");
+
+  app.innerHTML = `
+    <a class="back" href="#/">← Tutti i corsi</a>
+    <h1>Assistente</h1>
+    <p class="sub">Fammi una domanda sui contenuti dei corsi: ti rispondo citando la lezione giusta.</p>
+    <div class="chat">
+      <div id="msgs" class="chat-msgs">
+        ${bubbles || ""}
+        ${chat.msgs.length ? "" : `
+          <div class="chat-suggest">
+            ${SUGGERIMENTI.map((s) => `<button type="button" data-q="${esc(s)}">${esc(s)}</button>`).join("")}
+          </div>`}
+      </div>
+      <div id="chat-status" class="chat-status" hidden></div>
+      <form id="chat-form" class="chat-form">
+        <input id="chat-input" type="text" maxlength="2000" autocomplete="off"
+               placeholder="Scrivi la tua domanda…">
+        <button class="btn" type="submit">Invia</button>
+      </form>
+    </div>`;
+
+  const form = document.getElementById("chat-form");
+  const input = document.getElementById("chat-input");
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const q = input.value.trim();
+    if (q && !chat.busy) { input.value = ""; sendChat(q); }
+  });
+  app.querySelectorAll(".chat-suggest button").forEach((b) =>
+    b.addEventListener("click", () => { if (!chat.busy) sendChat(b.dataset.q); }));
+
+  scrollChat();
+}
+
+const scrollChat = () => {
+  const el = document.getElementById("msgs");
+  if (el) window.scrollTo(0, document.body.scrollHeight);
+};
+
+function setChatBusy(busy) {
+  chat.busy = busy;
+  const input = document.getElementById("chat-input");
+  const btn = document.querySelector("#chat-form button");
+  if (input) input.disabled = busy;
+  if (btn) { btn.disabled = busy; btn.textContent = busy ? "…" : "Invia"; }
+}
+
+async function sendChat(question) {
+  const msgs = document.getElementById("msgs");
+  const status = document.getElementById("chat-status");
+  if (!msgs) return;
+
+  // la history da mandare NON include la domanda corrente
+  const history = chat.msgs.slice(-8).map((m) => ({ role: m.role, content: m.content }));
+
+  chat.msgs.push({ role: "user", content: question });
+  saveChat();
+  msgs.querySelector(".chat-suggest")?.remove();
+  msgs.insertAdjacentHTML("beforeend", `<div class="msg user">${esc(question)}</div>`);
+  msgs.insertAdjacentHTML("beforeend", `<div class="msg ai" id="live"><span class="dots">Ci penso…</span></div>`);
+  setChatBusy(true);
+  scrollChat();
+
+  const live = document.getElementById("live");
+  let answer = "";
+  const showStatus = (text) => {
+    if (!status) return;
+    status.hidden = !text;
+    status.textContent = text || "";
+  };
+
+  try {
+    const res = await fetch(CHAT_URL, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "authorization": `Bearer ${session.access_token}`,
+        "apikey": SUPABASE_KEY,
+      },
+      body: JSON.stringify({ message: question, history, conversationId: chat.id }),
+    });
+
+    if (!res.ok || !(res.headers.get("content-type") || "").includes("text/event-stream")) {
+      const err = await res.json().catch(() => ({}));
+      const msg = res.status === 429
+        ? "Hai finito le domande per oggi: la quota si rinnova domani. Se ti serve altro, scrivi al tuo consulente."
+        : "Non riesco a risponderti in questo momento. Riprova tra poco.";
+      console.error("academy-chat", res.status, err);
+      live.innerHTML = chatHtml(msg);
+      chat.msgs.push({ role: "assistant", content: msg });
+      saveChat();
+      return;
+    }
+
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const events = buf.split("\n\n");
+      buf = events.pop() || "";
+      for (const evt of events) {
+        const lines = evt.split("\n");
+        const name = (lines.find((l) => l.startsWith("event: ")) || "").slice(7);
+        const dataLine = lines.find((l) => l.startsWith("data: "));
+        if (!dataLine) continue;
+        let d = {};
+        try { d = JSON.parse(dataLine.slice(6)); } catch (_) { continue; }
+
+        if (name === "delta" && d.text) {
+          answer += d.text;
+          showStatus("");
+          live.innerHTML = chatHtml(answer);
+          scrollChat();
+        } else if (name === "status" && d.type === "reading") {
+          showStatus(`📖 Sto leggendo: ${d.title}`);
+        } else if (name === "error") {
+          answer = answer || d.message || "Qualcosa è andato storto, riprova.";
+          live.innerHTML = chatHtml(answer);
+        }
+      }
+    }
+
+    if (!answer) answer = "Non sono riuscito a produrre una risposta, riprova.";
+    chat.msgs.push({ role: "assistant", content: answer });
+    saveChat();
+  } catch (e) {
+    console.error("academy-chat", e);
+    const msg = "Connessione interrotta. Controlla la rete e riprova.";
+    if (live) live.innerHTML = chatHtml(answer ? answer + "\n\n" + msg : msg);
+    chat.msgs.push({ role: "assistant", content: answer || msg });
+    saveChat();
+  } finally {
+    showStatus("");
+    setChatBusy(false);
+    scrollChat();
+  }
+}
+
 // ------------------------------------------------------------------ routing
 
 async function loadCatalog() {
@@ -375,6 +556,7 @@ function route() {
   if (section === "password") return renderNewPassword(false);
   if (section === "corso") return renderCourse(param);
   if (section === "lezione") return renderLesson(param);
+  if (section === "assistente") return renderChat();
   renderHome();
 }
 

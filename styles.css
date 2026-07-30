@@ -241,7 +241,76 @@ a.btn-ghost { text-decoration: none; display: inline-block; }
 }
 .error { background: #fdeceb; border-color: #f3c9c6; color: #8d2b25; }
 
+/* ---------------------------------------------------------- assistente */
+
+.btn-ghost.gold { border-color: rgba(200,162,86,.65); color: var(--gold); }
+
+.chat { display: flex; flex-direction: column; }
+
+.chat-msgs { display: flex; flex-direction: column; gap: 10px; }
+
+.msg {
+  max-width: 85%;
+  padding: 11px 15px;
+  border-radius: 15px;
+  font-size: 15px;
+  line-height: 1.5;
+  overflow-wrap: break-word;
+}
+.msg.user {
+  align-self: flex-end;
+  background: var(--navy);
+  color: #fff;
+  border-bottom-right-radius: 5px;
+}
+.msg.ai {
+  align-self: flex-start;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-bottom-left-radius: 5px;
+}
+.msg.ai a { color: var(--navy); font-weight: 600; }
+.msg .dots { color: var(--muted); font-style: italic; }
+
+.chat-status { color: var(--muted); font-size: 13px; font-style: italic; padding: 8px 2px 0; }
+.chat-status[hidden] { display: none; }
+
+.chat-suggest { display: flex; flex-wrap: wrap; gap: 8px; }
+.chat-suggest button {
+  background: var(--navy-soft);
+  color: var(--navy);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 9px 15px;
+  font-size: 13.5px;
+  cursor: pointer;
+  text-align: left;
+}
+.chat-suggest button:hover { border-color: var(--navy); }
+
+.chat-form {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: 10px;
+  padding: 12px 0 16px;
+  background: var(--bg);
+}
+.chat-form input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 15px;
+  background: #fff;
+}
+.chat-form input:focus { outline: 2px solid var(--navy); border-color: transparent; }
+.chat-form .btn { border-radius: 999px; }
+
 @media (max-width: 620px) {
   #app { padding: 22px 15px 60px; }
   h1 { font-size: 23px; }
+  .msg { max-width: 92%; }
+  #topbar { padding: 0 14px; gap: 9px; }
+  .who { display: none; }
 }
