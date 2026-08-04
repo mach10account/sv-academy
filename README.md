@@ -1,22 +1,17 @@
-# SV Academy
+# SV Academy — spostata
 
-Piattaforma corsi di Salone Vincente. Sostituisce l'area membri di GoHighLevel.
+I corsi non vivono più qui: stanno nel sito unico di Salone Vincente, insieme
+all'agenda del centro, alle conversazioni delle clienti e all'assistente.
 
-- **Frontend**: statico, nessuna build. Supabase JS via CDN.
-- **Dati e accessi**: Supabase (schema `academy`), regole RLS: un membro vede
-  solo i corsi a cui è iscritto.
-- **Video**: Bunny Stream. L'URL del player non sta nel frontend: lo emette la
-  edge function `lesson-video` dopo aver verificato l'iscrizione, firmato e
-  con scadenza a 30 minuti.
-- **Watermark**: l'email di chi guarda viene sovrapposta al player.
+- Sito: <https://agenda.salone-vincente.com/>
+- Codice: <https://github.com/mach10account/sv-agenda>
 
-## File
+Questo repository resta in piedi per una ragione sola: i link già mandati ai
+centri puntano qui. `index.html` è una pagina di rimbalzo che porta di là
+**conservando la parte dopo il #** — una lezione, un corso o un link di
+recupero password aperto da WhatsApp arriva al posto giusto.
 
-| file | contenuto |
-|---|---|
-| `index.html` | struttura di base |
-| `app.js` | login, routing, catalogo, player, avanzamento |
-| `styles.css` | stile |
+Chi apre la home viene mandato ai corsi (`#/corsi`), non all'agenda.
 
-Nel repository non ci sono segreti: la sola chiave presente è quella
-publishable di Supabase, protetta lato database dalle policy RLS.
+Da spegnere solo quando i link vecchi saranno spariti dalla circolazione:
+il recupero password di n8n va aggiornato per generare link sul nuovo dominio.
