@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SV Academy si è spostata</title>
+  <title>Estetista Indipendente — ti porto sul sito</title>
   <style>
     body {
       margin: 0;
@@ -21,8 +21,8 @@
 </head>
 <body>
   <div>
-    <p>I corsi ora stanno insieme all'agenda.<br>Ti porto lì…</p>
-    <p><a id="destinazione" href="https://agenda.salone-vincente.com/">Vai a Salone Vincente</a></p>
+    <p>Il sito ora è Estetista Indipendente.<br>Ti porto lì…</p>
+    <p><a id="destinazione" href="https://estetista-indipendente.com/">Vai a Estetista Indipendente</a></p>
   </div>
 
   <script>
@@ -30,9 +30,15 @@
     // password) arrivano ancora qui: la parte dopo il # va portata di là
     // pari pari, altrimenti si aprirebbe la pagina sbagliata.
     // Chi arriva sulla home dell'Academy vuole i corsi, non l'agenda.
+    //
+    // Questa pagina è anche la destinazione FISSA che la edge function
+    // recovery-link scrive dentro i link di recupero password. È un indirizzo
+    // github.io, quindi non muore quando cambia il dominio del sito: al
+    // prossimo trasloco si cambia una riga qui e i link continuano ad
+    // arrivare a destinazione, compresi quelli già partiti su WhatsApp.
     var hash = location.hash;
     if (!hash || hash === "#" || hash === "#/") hash = "#/corsi";
-    var destinazione = "https://agenda.salone-vincente.com/" + hash;
+    var destinazione = "https://estetista-indipendente.com/" + hash;
     document.getElementById("destinazione").href = destinazione;
     location.replace(destinazione);
   </script>
